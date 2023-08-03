@@ -26,7 +26,7 @@ HEAD_COLUMNS = ["waypoint1", "waypoint2", "distance_m", "duration_s"]
 def get_waypoints(num_province=10, file_tosave="my-waypoints-dist-dur.csv"):	
 	df_waypoints = pd.read_csv('province_thai.csv', usecols=['province'], encoding="utf-8")
 	#df_sample = df_waypoints.sample(num_province)
-	df_sample = df_waypoints[0:num_province]
+	df_sample = df_waypoints[:num_province]
 	all_waypoints = df_sample.values.ravel()
 	assert len(all_waypoints) == num_province
 
@@ -36,7 +36,7 @@ def get_waypoints(num_province=10, file_tosave="my-waypoints-dist-dur.csv"):
 	print("all waypoint:", len(all_row))
 	#df = pd.DataFrame(data=all_row, columns=["waypoint1", "waypoint2"])
 	#df.to_csv("all_waypoint.csv", index=False,)
-	
+
 	# call Google Map API
 	#gmaps = googlemaps.Client(key="AIzaSyCcwCIrvrb8WtYe4oCI8-AH3vHMGCzv8Nc")
 	gmaps = googlemaps.Client(key="AIzaSyAK3RgqSLy1toc4lkh2JVFQ5ipuRB106vU")
@@ -59,12 +59,12 @@ def get_waypoints(num_province=10, file_tosave="my-waypoints-dist-dur.csv"):
 			all_data.append( [waypoint1, waypoint2 , distance, duration] )
 			time.sleep(1)	# waiting 1 seconds
 		except Exception as e:
-			logging.error("Error with finding the route between %s and %s." % (waypoint1, waypoint2))
-			file = open('error.txt','a')
-			file.write("Error with finding the route between %s and %s.\n" % (waypoint1, waypoint2))
-			file.close()
-	
-	df = pd.DataFrame(all_data, columns=HEAD_COLUMNS)	
+			logging.error(
+				f"Error with finding the route between {waypoint1} and {waypoint2}."
+			)
+			with open('error.txt','a') as file:
+				file.write("Error with finding the route between %s and %s.\n" % (waypoint1, waypoint2))
+	df = pd.DataFrame(all_data, columns=HEAD_COLUMNS)
 	#assert len(df) == len(all_row)		
 	df.to_csv(file_tosave, index=False, encoding="utf-8")
 

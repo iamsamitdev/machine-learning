@@ -98,16 +98,16 @@ def create_classify_dataset(dataset_list):
 		total_example = len(X)
 		# label 0: 	"article", label 1: "encyclopedia", label 2: "news", label 4: "novel"
 		Y_label = [index] * total_example # create label followed by index (class name)
-		
+
 		split_index = int(total_example * 0.80)
-		X_train, X_test = X[0:split_index], X[split_index:]
-		Y_train, Y_test = Y_label[0:split_index:], Y_label[split_index:]
-		
+		X_train, X_test = X[:split_index], X[split_index:]
+		Y_train, Y_test = Y_label[:split_index], Y_label[split_index:]
+
 		X_trainList = X_trainList + X_train
 		X_testList = X_testList + X_test
 		Y_trainList = Y_trainList + Y_train
 		Y_testList = Y_testList + Y_test
-	
+
 	return X_trainList, X_testList, Y_trainList, Y_testList 
 
 def load_dataset():
@@ -122,38 +122,39 @@ def main():
 	output_path = ''
 	SOURCE_PATH="D:/MyProject/Big-datasets/dataset-thai-word/" # You can change here this path for your datasets
 	split_char = ' ' # file dataset use '|'	to seperate words in the content
-	
+
 	print("\n------- Convert 'article' dataset to set of indexs ----------")
 	article = dataset2index( join(SOURCE_PATH, "article") , join(output_path,"article_thai.p"))
-	
+
 	print("\n------- Convert 'encyclopedia' dataset to set of indexs ----------")
 	encyclopedia = dataset2index( join(SOURCE_PATH, "encyclopedia") ,join(output_path,"encyclopedia_thai.p"))
-	
+
 	print("\n------- Convert 'news' dataset to set of indexs----------")
 	news = dataset2index( join(SOURCE_PATH, "news") , join(output_path,"news_thai.p"))
-	
+
 	print("\n------- Convert 'novel' dataset to set of indexs----------")
 	novel =dataset2index( join(SOURCE_PATH, "novel") , join(output_path,"novel_thai.p"))
 
 	print("\n------------ Create dataset for classify task----------")
 	dataset_list = [article, encyclopedia, news, novel]
 	X_trainList, X_testList, Y_trainList, Y_testList  = create_classify_dataset(dataset_list)
-	assert len(X_trainList) + len(X_testList)  == len(Y_trainList) +  len(Y_testList) 	
+	assert len(X_trainList) + len(X_testList)  == len(Y_trainList) +  len(Y_testList)
 	assert len(X_trainList) + len(X_testList)  == len(article) +  len(encyclopedia) + len(news) +  len(novel)	
-		
-	dict = {}
-	dict['X_trainList'] = X_trainList
-	dict['X_testList'] = X_testList
-	dict['Y_trainList'] = Y_trainList
-	dict['Y_testList'] = Y_testList
+
+	dict = {
+		'X_trainList': X_trainList,
+		'X_testList': X_testList,
+		'Y_trainList': Y_trainList,
+		'Y_testList': Y_testList,
+	}
 	# save dictionary to a pickle file
 	pickle.dump( dict, open( join(PICKLE_FOLDER, "classify_text.p"), "wb" ) )
-	
+
 	print("\n------------ Convert unknown dataset (for test) to set of indexs ----------")
 	file_name = "TEST_NOVEL.txt"
-	contentList = content2index(file_name)	
+	contentList = content2index(file_name)
 	# save to a pickle file
-	pickle.dump( contentList, open( join(PICKLE_FOLDER, file_name + ".p"), "wb" ) )	
+	pickle.dump(contentList, open(join(PICKLE_FOLDER, f"{file_name}.p"), "wb"))	
 	
 if __name__ == "__main__":
 	main()

@@ -47,11 +47,10 @@ def getDatasets():
 	return x_train, x_test, y_train, y_test
 
 def restoreImg(X):
-	_, D = X.shape	
-	W = int(math.sqrt(D))	
-	assert D == W * W	
-	X_image = X.reshape((-1, W, W))
-	return X_image
+	_, D = X.shape
+	W = int(math.sqrt(D))
+	assert D == W**2
+	return X.reshape((-1, W, W))
 	
 def plotExampleImg(title, X_image, Ydigits, Y_predict=None):
 	fig, axarr = plt.subplots(2, 5)
@@ -59,24 +58,24 @@ def plotExampleImg(title, X_image, Ydigits, Y_predict=None):
 	plt.gcf().canvas.set_window_title(title)
 	fig.set_facecolor('#FFFFFF')
 	assert X_image.shape[0] == Ydigits.shape[0]
-		
-	for num in range(0,10):	 # label 0 to 9
+
+	for num in range(0,10): # label 0 to 9
 		selectIndex = np.where(Ydigits == num)[0] # select all indexs followed the label number
-		digitsImg = X_image[selectIndex]		
+		digitsImg = X_image[selectIndex]
 		# random images
 		#Return random integers from 0 (inclusive) to high (exclusive).
-		randomIndex = np.random.randint(0, digitsImg.shape[0])		
+		randomIndex = np.random.randint(0, digitsImg.shape[0])
 		#axList[num].imshow(digitsImg[randomIndex], cmap=plt.cm.gray)	
 		plt.gray()
 		axList[num].set_axis_off() # turn off axis x, y
-		axList[num].imshow(digitsImg[randomIndex])	
+		axList[num].imshow(digitsImg[randomIndex])
 		if Y_predict is not None:
 			assert Ydigits.shape[0] == Y_predict.shape[0]
 			ySelect = Y_predict[selectIndex]
-			axList[num].set_title("%s=> (%.2f)" % (num, ySelect[randomIndex]))		
-		else:			
-			axList[num].set_title("Number %s" % num)
-		
+			axList[num].set_title("%s=> (%.2f)" % (num, ySelect[randomIndex]))
+		else:	
+			axList[num].set_title(f"Number {num}")
+
 	plt.tight_layout()
 	plt.show()
 	
@@ -134,11 +133,11 @@ def train_support_vector(Xtrain, Ytrain, Xtest, Yexpected):
 def trainModel(model, Xtrain, Ytrain, Xtest, Yexpected, epochs):
 	global_start_time = time.time()
 	#automatic validation dataset 
-	model.fit(Xtrain, Ytrain, batch_size=500, epochs=epochs, verbose=0, validation_data=(Xtest, Yexpected))		
+	model.fit(Xtrain, Ytrain, batch_size=500, epochs=epochs, verbose=0, validation_data=(Xtest, Yexpected))
 	#model.fit(Xtrain, Ytrain, batch_size=500, nb_epoch=epochs, verbose=0, validation_split=0.8)
 	sec = datetime.timedelta(seconds=int(time.time() - global_start_time))
-	print ('Training duration : ', str(sec))
-	
+	print('Training duration : ', sec)
+
 	# evaluate all training set after trained
 	scores = model.evaluate(Xtrain, Ytrain, verbose=0)
 	print("Evalute model: %s = %.4f" % (model.metrics_names[0] ,scores[0]))
@@ -199,21 +198,15 @@ def build_MLP(features):
 
 # For example 5
 def reshapeCNN2D_Input(X): 
-	exampleNum, D = X.shape	
-	W = int(math.sqrt(D))	
+	exampleNum, D = X.shape
+	W = int(math.sqrt(D))
 	assert W == 8 # size of image == 8 x 8
-	
-	# change shape of image data	 			
-	if K.image_dim_ordering() == 'th': 
-		# backend is Theano
-		# Image dimension = chanel x row x column (chanel = 1, if it is RGB: chanel = 3)
-		XImg = X.reshape(exampleNum, 1, W, W)			
-	else: 
-		# 'tf' backend is Tensorflow
-		# Image dimension = row x column x chanel (chanel = 1, if it is RGB: chanel = 3)
-		XImg = X.reshape(exampleNum, W, W, 1)				
-		
-	return XImg
+
+	return (
+		X.reshape(exampleNum, 1, W, W)
+		if K.image_dim_ordering() == 'th'
+		else X.reshape(exampleNum, W, W, 1)
+	)
 
 # For example 6
 def reshapeCNN1D_Input(X): 
@@ -289,13 +282,11 @@ def build_CNN_1D(image_shape):
 			  
 # For example 7, 8, 9 ==> for Recurrent Neural Networks
 def getSequenceInput(X): 
-	exampleNum, D = X.shape	
-	W = int(math.sqrt(D))	
+	exampleNum, D = X.shape
+	W = int(math.sqrt(D))
 	assert W == 8 # size of image == 8 x 8
-	
-	# Dimension = row x colum (without chanel)
-	XImg = X.reshape(exampleNum, W, W)
-	return XImg
+
+	return X.reshape(exampleNum, W, W)
 
 # Example 7: Recurrent Neural Networks (RNNs)
 def build_RNN(image_shape):			

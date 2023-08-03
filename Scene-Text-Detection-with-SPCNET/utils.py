@@ -70,8 +70,7 @@ def compute_iou(box, boxes, box_area, boxes_area):
     x2 = np.minimum(box[3], boxes[:, 3])
     intersection = np.maximum(x2 - x1, 0) * np.maximum(y2 - y1, 0)
     union = box_area + boxes_area[:] - intersection[:]
-    iou = intersection / union
-    return iou
+    return intersection / union
 
 
 def compute_overlaps(boxes1, boxes2):
@@ -110,9 +109,7 @@ def compute_overlaps_masks(masks1, masks2):
     # intersections and union
     intersections = np.dot(masks1.T, masks2)
     union = area1[:, None] + area2[None, :] - intersections
-    overlaps = intersections / union
-
-    return overlaps
+    return intersections / union
 
 
 def non_max_suppression(boxes, scores, threshold):
@@ -198,8 +195,7 @@ def box_refinement_graph(box, gt_box):
     dh = tf.log(gt_height / height)
     dw = tf.log(gt_width / width)
 
-    result = tf.stack([dy, dx, dh, dw], axis=1)
-    return result
+    return tf.stack([dy, dx, dh, dw], axis=1)
 
 
 def box_refinement(box, gt_box):
@@ -331,7 +327,7 @@ def resize_image(image, min_dim=None, max_dim=None, min_scale=None, mode="square
         image = image[y:y + min_dim, x:x + min_dim]
         window = (0, 0, min_dim, min_dim)
     else:
-        raise Exception("Mode {} not supported".format(mode))
+        raise Exception(f"Mode {mode} not supported")
     return image.astype(image_dtype), window, scale, padding, crop
 
 
@@ -455,10 +451,9 @@ def generate_anchors(scales, ratios, shape, feature_stride, anchor_stride):
         [box_centers_y, box_centers_x], axis=2).reshape([-1, 2])
     box_sizes = np.stack([box_heights, box_widths], axis=2).reshape([-1, 2])
 
-    # Convert to corner coordinates (y1, x1, y2, x2)
-    boxes = np.concatenate([box_centers - 0.5 * box_sizes,
-                            box_centers + 0.5 * box_sizes], axis=1)
-    return boxes
+    return np.concatenate(
+        [box_centers - 0.5 * box_sizes, box_centers + 0.5 * box_sizes], axis=1
+    )
 
 
 def generate_pyramid_anchors(scales, ratios, feature_shapes, feature_strides,
@@ -472,12 +467,16 @@ def generate_pyramid_anchors(scales, ratios, feature_shapes, feature_strides,
         with the same order of the given scales. So, anchors of scale[0] come
         first, then anchors of scale[1], and so on.
     """
-    # Anchors
-    # [anchor_count, (y1, x1, y2, x2)]
-    anchors = []
-    for i in range(len(scales)):
-        anchors.append(generate_anchors(scales[i], ratios, feature_shapes[i],
-                                        feature_strides[i], anchor_stride))
+    anchors = [
+        generate_anchors(
+            scales[i],
+            ratios,
+            feature_shapes[i],
+            feature_strides[i],
+            anchor_stride,
+        )
+        for i in range(len(scales))
+    ]
     return np.concatenate(anchors, axis=0)
 
 
@@ -700,7 +699,7 @@ def download_trained_weights(coco_model_path, verbose=1):
     coco_model_path: local path of COCO trained weights
     """
     if verbose > 0:
-        print("Downloading pretrained model to " + coco_model_path + " ...")
+        print(f"Downloading pretrained model to {coco_model_path} ...")
     with urllib.request.urlopen(COCO_MODEL_URL) as resp, open(coco_model_path, 'wb') as out:
         shutil.copyfileobj(resp, out)
     if verbose > 0:
@@ -785,8 +784,7 @@ def apply_box_deltas_graph(boxes, deltas):
     x1 = center_x - 0.5 * width
     y2 = y1 + height
     x2 = x1 + width
-    result = tf.stack([y1, x1, y2, x2], axis=1, name="apply_box_deltas_out")
-    return result
+    return tf.stack([y1, x1, y2, x2], axis=1, name="apply_box_deltas_out")
 
 
 def clip_boxes_graph(boxes, window):
@@ -846,9 +844,7 @@ def batch_pack_graph(x, counts, num_rows):
     """Picks different number of values from each row
     in x depending on the values in counts.
     """
-    outputs = []
-    for i in range(num_rows):
-        outputs.append(x[i, :counts[i]])
+    outputs = [x[i, :counts[i]] for i in range(num_rows)]
     return tf.concat(outputs, axis=0)
 
 def overlaps_graph(boxes1, boxes2):
@@ -877,8 +873,7 @@ def overlaps_graph(boxes1, boxes2):
     union = b1_area + b2_area - intersections
     # 4. Compute IoU and reshape to [boxes1_num, boxes2_num]
     iou = intersections / union
-    overlaps = tf.reshape(iou, [tf.shape(boxes1)[0], tf.shape(boxes2)[0]])
-    return overlaps
+    return tf.reshape(iou, [tf.shape(boxes1)[0], tf.shape(boxes2)[0]])
     
 def box_refinement_graph(box, gt_box):
     '''
@@ -892,7 +887,7 @@ def box_refinement_graph(box, gt_box):
     width = box[:,3] - box[:,1]
     center_y = box[:,0] + 0.5 * height
     center_x = box[:,1] + 0.5 * width
-    
+
     gt_height = gt_box[:,2] - gt_box[:,0]
     gt_width = gt_box[:,3] - gt_box[:,1]
     gt_center_y = gt_box[:,0] + 0.5 * gt_height
@@ -903,8 +898,7 @@ def box_refinement_graph(box, gt_box):
     dh = tf.log(gt_height / height)
     dw = tf.log(gt_width / width)
 
-    result = tf.stack([dy, dx, dh, dw], axis=1)
-    return result
+    return tf.stack([dy, dx, dh, dw], axis=1)
 
 
 def unmold_detections(detections, mrcnn_mask, original_image_shape,

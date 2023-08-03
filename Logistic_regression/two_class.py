@@ -65,12 +65,12 @@ def prepare_dataset(csv_dataset,x_column_names, y_column_name, base_dir  = "" ):
 base_dir=''
 csv_dataset= 'dataset.csv'
 df = pd.read_csv(join(base_dir, csv_dataset))
-	
+
 print("\nFirst of 5 row in Dataset")
-print(df.head())	
+print(df.head())
 print("\nTail of 5 row in Dataset")
 print(df.tail())
-print("Size of dataframe: {}".format(df.shape))								
+print(f"Size of dataframe: {df.shape}")								
 
 x_column_names=['X1', 'X2']
 y_column_name='Y'
@@ -79,16 +79,16 @@ y_column_name='Y'
 # If column Y = 1, it is class A
 # If column Y = 0, it is class B
 def seperateClass(df):
-	dfClassA = df.query('%s == 1' % y_column_name)
-	dfClassB = df.query('%s == 0' % y_column_name)
+	dfClassA = df.query(f'{y_column_name} == 1')
+	dfClassB = df.query(f'{y_column_name} == 0')
 	return dfClassA,dfClassB
 
 classA, classB = seperateClass(df)
 
-print("\nSize of class A: {}".format(classA.shape))	
+print(f"\nSize of class A: {classA.shape}")
 print("5 first row in Class B:\n", classA.head())
 
-print("\nSize of class B: {}".format(classB.shape))
+print(f"\nSize of class B: {classB.shape}")
 print("5 fist row in Class B:\n", classB.head())
 
 def splitFeature(dfClass):

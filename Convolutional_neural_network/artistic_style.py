@@ -220,20 +220,17 @@ def preprocess(imgData, meanColor):
 
 # compute style features in feedforward mode
 def getcontentFeature(imgData):	
-	imgData = preprocess(imgData, meanColor)
-	g = tf.Graph()
-	with g.as_default(), g.device('/cpu:0'), tf.Session() as sess:
-		# placeholder for a image
-		imgInput = tf.placeholder('float', shape=imgData.shape)
-		
-		# create deep learning model and put image's placeholder into
-		# and then get conv4_2 layer (content layer)
-		conv4_2, _ = createModel(imgInput)
-		
-		# Run tensorflow: feed image data into the model
-		# and then get output from conv4_2 layer
-		feauture = conv4_2.eval(feed_dict={imgInput: imgData})		
-		return feauture
+    imgData = preprocess(imgData, meanColor)
+    g = tf.Graph()
+    with (g.as_default(), g.device('/cpu:0'), tf.Session() as sess):
+        # placeholder for a image
+        imgInput = tf.placeholder('float', shape=imgData.shape)
+
+        # create deep learning model and put image's placeholder into
+        # and then get conv4_2 layer (content layer)
+        conv4_2, _ = createModel(imgInput)
+
+        return conv4_2.eval(feed_dict={imgInput: imgData})
 
 def getAllStyleFeatures(styleData):
 	styleData = preprocess(styleData, meanColor)
@@ -363,43 +360,41 @@ def restoreImage(imgData):
 	return img
 	
 def resizeImgData(imgData):	
-	height, width, _ = imgData.shape
-	# get shorter edge
-	shortEdge = min([height , width]) 	
-	# crop a image to square image: height  = width	
-	marginY = int((height  - shortEdge) / 2)
-	marginX = int((width - shortEdge) / 2)	
-	cropImg = imgData[marginY: marginY + shortEdge, marginX: marginX + shortEdge]	
-	# resize to 224, 224
-	resizedImg = scipy.misc.imresize(cropImg, (224, 224))
-	return resizedImg
+    height, width, _ = imgData.shape
+    # get shorter edge
+    shortEdge = min([height , width])
+    # crop a image to square image: height  = width	
+    marginY = int((height  - shortEdge) / 2)
+    marginX = int((width - shortEdge) / 2)
+    cropImg = imgData[marginY: marginY + shortEdge, marginX: marginX + shortEdge]
+    return scipy.misc.imresize(cropImg, (224, 224))
 
 def createImg():
-	start_time = time.time() # start timmer
-	#fileName = "1-content.jpg"
-	fileName = "pic_4.jpg"
-	sytleName = "the_scream.jpg"
-	imgData = imread3d(fileName)
-	imgData = resizeImgData(imgData)		# to: 244 x 244 x chanel
-	assert imgData.shape[0:2] == (224, 224)
+    start_time = time.time() # start timmer
+    #fileName = "1-content.jpg"
+    fileName = "pic_4.jpg"
+    sytleName = "the_scream.jpg"
+    imgData = imread3d(fileName)
+    imgData = resizeImgData(imgData)		# to: 244 x 244 x chanel
+    assert imgData.shape[:2] == (224, 224)
 
-	styleData = imread3d(sytleName)
-	styleData = resizeImgData(styleData)	# to: 244 x 244 x chanel
-	assert styleData.shape[0:2] == (224, 224)
+    styleData = imread3d(sytleName)
+    styleData = resizeImgData(styleData)	# to: 244 x 244 x chanel
+    assert styleData.shape[:2] == (224, 224)
 
-	# get content feature map
-	contentFeature = getcontentFeature(imgData) 
-	# get all style features map
-	allStyleFeautures = getAllStyleFeatures(styleData)
+    # get content feature map
+    contentFeature = getcontentFeature(imgData)
+    # get all style features map
+    allStyleFeautures = getAllStyleFeatures(styleData)
 
-	#initImg = np.random.randn( *imgData.shape)  *  0.256
-	# waiting for many hours
-	resultImg = trainModel(imgData, contentFeature, allStyleFeautures,1000)
-	print("Creating image inished: %ds" % (time.time() - start_time))
+    #initImg = np.random.randn( *imgData.shape)  *  0.256
+    # waiting for many hours
+    resultImg = trainModel(imgData, contentFeature, allStyleFeautures,1000)
+    print("Creating image inished: %ds" % (time.time() - start_time))
 
-	scipy.misc.imsave("output.jpg", resultImg)
-	plt.imshow(resultImg)
-	plt.show()
+    scipy.misc.imsave("output.jpg", resultImg)
+    plt.imshow(resultImg)
+    plt.show()
 
 ##  This code use 1 style, But in original code can use more than 1 styles
 if __name__ == '__main__':

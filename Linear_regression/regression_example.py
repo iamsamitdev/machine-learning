@@ -25,7 +25,7 @@ from keras.models import Sequential
 import animation as am		
 
 def show_result(bias, weights, mse):
-	print('Bias  = %s , Coefficients = %s , MSE = %s' % (bias, weights, mse))
+	print(f'Bias  = {bias} , Coefficients = {weights} , MSE = {mse}')
 	
 def show_graph(X, Y, predict, title, xlabel, ylabel):
 	plt.scatter(X, Y, color='b', label='data')
@@ -74,16 +74,16 @@ def predict_example3(X, Y):
 	# Try to find values for weights and bias that compute FX = W * X + B	
 	num_feature = X.shape[1]
 	W = tf.Variable(tf.truncated_normal((num_feature, 1)))
-	B = tf.Variable(tf.truncated_normal((1, 1)))	
-	X = X.astype(np.float32)	
+	B = tf.Variable(tf.truncated_normal((1, 1)))
+	X = X.astype(np.float32)
 	FX =tf.matmul(X, W) + B	
-	
+
 	# Minimize the mean squared errors.
 	loss = tf.reduce_mean(tf.square(FX - Y))
-	
+
 	# Use gradient descent algorithm for optimizing
 	learningRate = 0.01
-	optimizer = tf.train.GradientDescentOptimizer(learningRate)	
+	optimizer = tf.train.GradientDescentOptimizer(learningRate)
 	train = optimizer.minimize(loss)
 
 	# Before starting, initialize the variables. We will 'run' this first.
@@ -95,9 +95,9 @@ def predict_example3(X, Y):
 
 	# Try fit the line
 	b, w, mse, predict = (None, None, None, None)
-	for step in range(4000):
+	for _ in range(4000):
 		_, b, w, mse, predict = sess.run([train, B, W, loss, FX])				
-		
+
 	#Show model
 	show_result(b, w ,mse )
 	return predict

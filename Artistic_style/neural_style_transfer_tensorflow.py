@@ -145,20 +145,21 @@ layer		 stride		Activation function						 output size
 """
 
 def getVGGdata(vggpath):	
-	dataVGG = scipy.io.loadmat(vggpath)	
-	dd = dataVGG['layers'][0]
-	assert dd.shape == (43,)
-		
-	# get color mean
-	#mean = dataVGG['normalization'][0][0][0]
-	#assert mean.shape == (224, 224, 3)
-	
-	# the average color: Red, Green, Blue should be [123.68, 116.779, 103.939])
-	#meanColor = np.mean(mean, axis=(0, 1))
-	meanColor = [123.68, 116.779, 103.939]	# fix bug with hard code
-	W={}; B={};
-	for i in range(0, len(dd)):			
-		"""
+    dataVGG = scipy.io.loadmat(vggpath)
+    dd = dataVGG['layers'][0]
+    assert dd.shape == (43,)
+
+    # get color mean
+    #mean = dataVGG['normalization'][0][0][0]
+    #assert mean.shape == (224, 224, 3)
+
+    # the average color: Red, Green, Blue should be [123.68, 116.779, 103.939])
+    #meanColor = np.mean(mean, axis=(0, 1))
+    meanColor = [123.68, 116.779, 103.939]	# fix bug with hard code
+    W={}
+    B={};
+    for _ in range(0, len(dd)):
+        """
 		#print(dd[i][0][0][0])
 		['conv1_1'] ['relu1_1'] ['conv1_2'] ['relu1_2'] ['pool1'] 
 		['conv2_1'] ['relu2_1'] ['conv2_2'] ['relu2_2'] ['pool2']
@@ -168,25 +169,23 @@ def getVGGdata(vggpath):
 		['fc6'] ['relu6']
 		['fc7'] ['relu7']
 		['fc8'] ['prob']
-		"""		
-		pass
-			
-	for index, name in enumerate(layers):		
-		type = name[:4]
-		if type == 'conv':			
-			#weights, bias = dd[index][0][0][0][0]								
-			weights = dd[index][0][0][2][0][0]
-			bias =    dd[index][0][0][2][0][1]
-			# mat file	: weights are [width, height, in_channels, out_channels]
-			# tensorflow: weights are [height, width, in_channels, out_channels]
-			weights = np.transpose(weights, (1, 0, 2, 3))
-			# bias : 1 x chanels
-			# convert to a vector: chanels x 1		
-			bias = bias.reshape(-1)
-			W[name] = weights
-			B[name] = bias
-	
-	return W, B, meanColor
+		"""
+    for index, name in enumerate(layers):		
+    	type = name[:4]
+    	if type == 'conv':			
+    		#weights, bias = dd[index][0][0][0][0]								
+    		weights = dd[index][0][0][2][0][0]
+    		bias =    dd[index][0][0][2][0][1]
+    		# mat file	: weights are [width, height, in_channels, out_channels]
+    		# tensorflow: weights are [height, width, in_channels, out_channels]
+    		weights = np.transpose(weights, (1, 0, 2, 3))
+    		# bias : 1 x chanels
+    		# convert to a vector: chanels x 1		
+    		bias = bias.reshape(-1)
+    		W[name] = weights
+    		B[name] = bias
+
+    return W, B, meanColor
 
 W, B, meanColor = None, None, None
 # Create the network model (can reuse this model)
@@ -237,20 +236,17 @@ def preprocess(imgData, meanColor):
 
 # compute style features in feedforward mode
 def getcontentFeature(imgData):	
-	imgData = preprocess(imgData, meanColor)
-	g = tf.Graph()
-	with g.as_default(), g.device('/cpu:0'), tf.Session() as sess:
-		# placeholder for a image
-		imgInput = tf.placeholder('float', shape=imgData.shape)
-		
-		# create deep learning model and put image's placeholder into
-		# and then get conv4_2 layer (content layer)
-		conv4_2, _ = createModel(imgInput)
-		
-		# Run tensorflow: feed image data into the model
-		# and then get output from conv4_2 layer
-		feauture = conv4_2.eval(feed_dict={imgInput: imgData})		
-		return feauture
+    imgData = preprocess(imgData, meanColor)
+    g = tf.Graph()
+    with (g.as_default(), g.device('/cpu:0'), tf.Session() as sess):
+        # placeholder for a image
+        imgInput = tf.placeholder('float', shape=imgData.shape)
+
+        # create deep learning model and put image's placeholder into
+        # and then get conv4_2 layer (content layer)
+        conv4_2, _ = createModel(imgInput)
+
+        return conv4_2.eval(feed_dict={imgInput: imgData})
 
 def getAllStyleFeatures(styleData):
 	styleData = preprocess(styleData, meanColor)
@@ -384,51 +380,49 @@ def restoreImage(imgData):
 
 import skimage.transform
 def resizeImgData(imgData):	
-	height, width, _ = imgData.shape
-	# get shorter edge
-	shortEdge = min([height , width]) 	
-	# crop a image to square image: height  = width	
-	marginY = int((height  - shortEdge) / 2)
-	marginX = int((width - shortEdge) / 2)	
-	cropImg = imgData[marginY: marginY + shortEdge, marginX: marginX + shortEdge]	
-	# resize to 224, 224
-	resizedImg = skimage.transform.resize(cropImg, (224, 224))
-	return resizedImg
+    height, width, _ = imgData.shape
+    # get shorter edge
+    shortEdge = min([height , width])
+    # crop a image to square image: height  = width	
+    marginY = int((height  - shortEdge) / 2)
+    marginX = int((width - shortEdge) / 2)
+    cropImg = imgData[marginY: marginY + shortEdge, marginX: marginX + shortEdge]
+    return skimage.transform.resize(cropImg, (224, 224))
 	
 def createImg(fileName,	sytleName, 
 				epochs = 1000,
 				checkpoint="checkpoint", 
 				vggpath='D:\MyProject\Model-AI\imagenet-vgg-verydeep-19.mat',				
 				outputFile="output.jpg"):
-	if exists(checkpoint):			
-		shutil.rmtree(checkpoint)
-	
-	makedirs(checkpoint)	# backup images
-	
-	global W, B, meanColor
-	W, B, meanColor = getVGGdata(vggpath)
-	assert len(W) == 16 # number layer
-	assert len(B) == 16 # number layer
-	
-	start_time = time.time() # start timmer	
-	imgData = imread3d(fileName)
-	imgData = resizeImgData(imgData)		# to: 244 x 244 x chanel
-	assert imgData.shape[0:2] == (224, 224)
+    if exists(checkpoint):			
+    	shutil.rmtree(checkpoint)
 
-	styleData = imread3d(sytleName)
-	styleData = resizeImgData(styleData)	# to: 244 x 244 x chanel
-	assert styleData.shape[0:2] == (224, 224)
+    makedirs(checkpoint)	# backup images
 
-	# get content feature map
-	contentFeature = getcontentFeature(imgData) 
-	# get all style features map
-	allStyleFeautures = getAllStyleFeatures(styleData)
+    global W, B, meanColor
+    W, B, meanColor = getVGGdata(vggpath)
+    assert len(W) == 16 # number layer
+    assert len(B) == 16 # number layer
 
-	#initImg = np.random.randn( *imgData.shape)  *  0.256
-	# waiting for many hours to create a image
-	resultImg = trainModel(imgData, contentFeature, allStyleFeautures, epochs ,checkpoint)
-	print("Creating image inished: %ds" % (time.time() - start_time))
-	imageio.imwrite(outputFile, resultImg)
+    start_time = time.time() # start timmer	
+    imgData = imread3d(fileName)
+    imgData = resizeImgData(imgData)		# to: 244 x 244 x chanel
+    assert imgData.shape[:2] == (224, 224)
+
+    styleData = imread3d(sytleName)
+    styleData = resizeImgData(styleData)	# to: 244 x 244 x chanel
+    assert styleData.shape[:2] == (224, 224)
+
+    # get content feature map
+    contentFeature = getcontentFeature(imgData)
+    # get all style features map
+    allStyleFeautures = getAllStyleFeatures(styleData)
+
+    #initImg = np.random.randn( *imgData.shape)  *  0.256
+    # waiting for many hours to create a image
+    resultImg = trainModel(imgData, contentFeature, allStyleFeautures, epochs ,checkpoint)
+    print("Creating image inished: %ds" % (time.time() - start_time))
+    imageio.imwrite(outputFile, resultImg)
 		
 
 ##  This code use 1 style, But in original code can use more than 1 styles

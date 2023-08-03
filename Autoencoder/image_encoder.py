@@ -56,16 +56,16 @@ def build_neural_network(input_len):
 	return model
 
 def trainModel(model, Xtrain, epochs=20):
-	global_start_time = time.time()			
-	model.fit(Xtrain, Xtrain, batch_size=256, nb_epoch=epochs, verbose=0)			
+	global_start_time = time.time()
+	model.fit(Xtrain, Xtrain, batch_size=256, nb_epoch=epochs, verbose=0)
 	sec = datetime.timedelta(seconds=int(time.time() - global_start_time))
-	print ('Training duration : ', str(sec))
-	
+	print('Training duration : ', sec)
+
 	# evaluate all training set after trained
 	scores = model.evaluate(Xtrain, Xtrain, verbose=0)
 	print("Evalute model: %s = %.4f" % (model.metrics_names[0] ,scores[0]))
 	print("Evalute model: %s = %.4f" % (model.metrics_names[1] ,scores[1]*100))
-		
+
 	return model
 
 	
@@ -74,22 +74,22 @@ if __name__ == "__main__":
 	(X_train, _), (X_test, Y_test) = mnist.load_data()
 	_, heigh, width = X_train.shape
 	total_pixel = heigh * width	
-	
+
 	X_train = np.reshape(X_train, (-1, heigh * width))
 	X_test = np.reshape(X_test, (-1, heigh * width))
-	
+
 	base_model = build_neural_network(X_train.shape[1])
-	base_model = trainModel(base_model, X_train)	
+	base_model = trainModel(base_model, X_train)
 	print(base_model.summary())
-		
+
 	encoder_model = Model(inputs=base_model.input, outputs=base_model.get_layer("dense_2").output)
 	print(encoder_model.summary())		
-		
+
 	random_index = random.randint(0, X_test.shape[0])
 	encoded = encoder_model.predict(np.array([X_test[random_index]]), verbose=0)
 	print("Encoding digit:", Y_test[random_index])
-	print("Encoding (examoke):\n", encoded[0:10])
-	
+	print("Encoding (examoke):\n", encoded[:10])
+
 	X_decoded = base_model.predict(X_test, verbose=0)
 	# reshape to [example, heigh, width]
 	X_decoded = np.reshape(X_decoded, (-1, heigh, width))

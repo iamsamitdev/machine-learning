@@ -24,26 +24,23 @@ def getColorDataInPixel(imageData):
 	return image_train/255 # normalized		
 
 def getCoordTrain(high, width):		
-	coordinates = np.zeros((high, width, 2))		
+	coordinates = np.zeros((high, width, 2))
 	for w in range(0,width): # get all coordinates (x,y)
 		for h in range(0,high):			 
 			coordinates[h][w][0] = (w-width/2)/width; # normalize x codinate			 
 			coordinates[h][w][1] = (h-high/2)/high;   # normalize y codinate
-	
+
 	# reshape coordinates to size: [high*width] x 2
 	coordinates  = np.array(coordinates)
-	coord_train = coordinates.reshape(high*width , -1)
-	return coord_train
+	return coordinates.reshape(high*width , -1)
 	
 def preShowImage(imageData):
 	return np.clip(imageData, 0, 255).astype(np.uint8)
 	
 def restoreImage(colPredict, high, width):	
 	# restore RGB values from normalized		
-	colPredict = np.floor(255*colPredict)	
-	# Restore shape of color_predicted to size: high x width x 3	
-	imageData = colPredict.reshape((high, width , 3) )
-	return imageData
+	colPredict = np.floor(255*colPredict)
+	return colPredict.reshape((high, width , 3) )
 
 import os
 import os.path

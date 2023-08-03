@@ -89,56 +89,58 @@ def training_model(model, step_visual=0, visual=None):
 		
 class Visualization():	
 	def __init__(self, model, X_train, Label_train, title, dpi=70):
-		fig = plt.figure(figsize=(19.20,10.80), dpi=dpi)		
+		fig = plt.figure(figsize=(19.20,10.80), dpi=dpi)
 		plt.gcf().canvas.set_window_title(title)
 		fig.set_facecolor('#FFFFFF')
 		ax1 = fig.add_subplot(121)
-		ax2 = fig.add_subplot(222)		
+		ax2 = fig.add_subplot(222)
 		ax3 = fig.add_subplot(224)
 		ax1.grid(False) # toggle grid off
 		ax2.grid(False) # toggle grid off
 		ax3.grid(False) # toggle grid off
-								
-		self.ax1, self.ax2, self.ax3 = ax1, ax2, ax3		
+
+		self.ax1, self.ax2, self.ax3 = ax1, ax2, ax3
 		self.fig =fig
-		
-		self.model = model		
-		self.xy_label = []		
+
+		self.model = model
+		self.xy_label = []
 		self.loss = []
 		self.accuracy = []
-				
+
 		# There are 2 classess
 		class_label = range(0, max(Label_train)+1)
-		self.scatter_list = [ self.ax1.scatter([], []) for i in range(0,len(class_label))]
-				
+		self.scatter_list = [
+			self.ax1.scatter([], []) for _ in range(0, len(class_label))
+		]
+
 		# seperate 2 class of X_train
 		for number in class_label:
 			index_label = np.where(Label_train == number)[0]
 			xy = X_train[index_label]		
 			self.xy_label.append(xy)
-			
+
 		h = .3  # step size in the mesh
 		# create a mesh to plot in
 		x_min, x_max = X_train[:, 0].min() - 1, X_train[:, 0].max() + 1
 		y_min, y_max = X_train[:, 1].min() - 1, X_train[:, 1].max() + 1
 		xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                     np.arange(y_min, y_max, h))
-				
+		np.arange(y_min, y_max, h))
+
 		self.xx = xx
 		self.yy = yy
-		
-		self.line2, = ax2.plot([], [])		
+
+		self.line2, = ax2.plot([], [])
 		self.line3, = ax3.plot([], [])		
-				
+
 		ax1.set_xticks(())
 		ax1.set_yticks(())
 		ax1.set_xlabel('X values')
 		ax1.set_ylabel('Y values')
 		ax1.set_xlim(xx.min(), xx.max())
 		ax1.set_ylim(yy.min(), yy.max())
-		
+
 		self.ax1.set_title("Classify 2 groups")
-		self.ax2.set_title("Loss")		
+		self.ax2.set_title("Loss")
 		self.ax3.set_title("Accuracy")
 		self.ax2.set_ylim(0, 1)   # not autoscaled 	
 		self.ax3.set_ylim(0, 110)  # not autoscaled		

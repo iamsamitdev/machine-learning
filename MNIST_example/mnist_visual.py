@@ -106,19 +106,19 @@ if __name__ == "__main__":
 	# call this function in a loop to train the model
 	def training_model(step_visual=0, visual=None): 	
 		num_epochs=10
-		model.fit(Xtrain, YtrainEncoded, batch_size=500, epochs=num_epochs, verbose=0, callbacks=[his], validation_data=(Xtest, Yexpected))	 	
+		model.fit(Xtrain, YtrainEncoded, batch_size=500, epochs=num_epochs, verbose=0, callbacks=[his], validation_data=(Xtest, Yexpected))
 		if visual is None:	
 			return 
-		
+
 		# visualisation only
 		outputHidden = hiddenModel.predict(rand10Image)	 # predict 10 images
 		packedImage2 = combineImage(outputHidden)
 		visual.update_accuracy_line(his.accuracy, his.val_accuracy)
-		visual.update_loss_line(his.loss, his.val_loss)	
+		visual.update_loss_line(his.loss, his.val_loss)
 		visual.update_image(packedImage)
-		visual.update_image_hidden( packedImage2 )		
+		visual.update_image_hidden( packedImage2 )
 		print("\n============ step %s ============" % (step_visual*num_epochs) )
-		print("Training: accuracy = %s and loss = %s" % (his.accuracy[-1:], his.loss[-1:]))
+		print(f"Training: accuracy = {his.accuracy[-1:]} and loss = {his.loss[-1:]}")
 		print("Validation: accuracy = %s and loss = %s\n" % (his.val_accuracy[-1:], his.val_loss[-1:]))
 	
 	visual = Visualization(title="Example: neural network with MNIST dataset")

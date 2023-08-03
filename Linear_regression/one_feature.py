@@ -15,8 +15,8 @@ from keras.optimizers import Adam
 from keras.models import Sequential
 
 def show_result(w0, w1, mse):
-	print('f(x) = %s + %sX , and MSE = %s' % (w0, w1, mse))
-	print('Coefficients are w0 = %s, w1 = %s' % (w0, w1))
+	print(f'f(x) = {w0} + {w1}X , and MSE = {mse}')
+	print(f'Coefficients are w0 = {w0}, w1 = {w1}')
 		
 def add_one(data_X):
 	ones =np.ones((len(data_X),1))	
@@ -82,7 +82,7 @@ def train_method5(X, Y):
 
 	# Minimize the mean squared errors.
 	loss = tf.reduce_mean(tf.square(FX - Y))
-	
+
 	# Use gradient descent algorithm for optimizing
 	learningRate = 0.01
 	optimizer = tf.train.GradientDescentOptimizer(learningRate)
@@ -97,9 +97,9 @@ def train_method5(X, Y):
 
 	# Try fit the line
 	w0, w1, mse = (0, 0, 0)
-	for step in range(3000):
+	for _ in range(3000):
 		_, w0, w1, mse = sess.run([train, B, W_1, loss])		
-			
+
 	#Show model
 	show_result(w0, w1, mse)
 
@@ -153,56 +153,56 @@ def isNan(value):
 
 # Method 7: 	
 def train_method7(data_X, Y):
-	X = add_one(data_X)	
+	X = add_one(data_X)
 	learningRate = 0.0001				# initial learning rate
 	C = np.matrix([0, 0]).T				# initial coefficients
-	
-	FX_init = X * C							
+
+	FX_init = X * C
 	mse_init = mean_squared_error(Y, FX_init)
-	print('First: f(x) = %s + %sx , and MSE = %s' % (C[0,0] , C[1,0] , mse_init))
-	
+	print(f'First: f(x) = {C[0, 0]} + {C[1, 0]}x , and MSE = {mse_init}')
+
 	# save predicted price for visualization later
-	FX_List = [FX_init]		
+	FX_List = [FX_init]
 	step = 0
-	
+
 	while(True):		
 		SLOPE = X.T * ( X * C - Y) 		# vector 2 x 1
 		new_C = C - (learningRate * SLOPE)		# vector 2 x 1
-				
+
 		if isNan(SLOPE):
 			print('Slope is NaN:', SLOPE)
 			break
-			
+
 		w0, w1 = C[0,0], C[1,0]
 		s0, s1 = SLOPE[0,0], SLOPE[1,0]
-		
+
 		if isConvergence(s0) == False:
 			w0 = new_C[0,0]				# new w0
-				
+
 		if isConvergence(s1) == False:
 			w1 = new_C[1,0]				# new w1
-		
+
 		C = np.matrix([ w0, w1]).T		# update new coefficients
-		
+
 		if step % 100 == 0: # for visualization later
 			FX = X * C			
 			FX_List = np.append(FX_List, FX) 
 		step +=1
-		
+
 		# stop while_loop when w0 and w1 meet convergence condition
 		if isConvergence(s0) and isConvergence(s1): 
 			break
 	#Finish training
 	print("Total step to learning:", step)
-	
+
 	#Show model
-	FX_final = X * C							
+	FX_final = X * C
 	mse_final = mean_squared_error(Y, FX_final )
 	w0, w1 = C
 	show_result(w0, w1, mse_final)
-	
+
 	# for visualization
-	FX_List = np.append(FX_List, FX_final) 
+	FX_List = np.append(FX_List, FX_final)
 	FX_List = np.reshape(FX_List,(-1, X.shape[0]))  # number of fx values x number of DatasetX
 	return FX_List	
 	
@@ -222,27 +222,27 @@ def prepare_dataset(csv_dataset,x_column_name, y_column_name, base_dir  = "" ):
 #######################	
 ## for test only
 def run_testsuite(train_X, train_Y):		
-	print("\nSize of training set X: {}".format(train_X.shape))
-	print("Size of training set Y: {}".format(train_Y.shape))
+	print(f"\nSize of training set X: {train_X.shape}")
+	print(f"Size of training set Y: {train_Y.shape}")
 
 	print("\n+++++Show method 1++++")
 	train_method1(train_X, train_Y)
-	
-	print("\n+++++Show method 2++++")	
+
+	print("\n+++++Show method 2++++")
 	train_method2(train_X, train_Y)
-	
+
 	print("\n+++++Show method 3++++")
 	train_method3(train_X, train_Y)
-	
+
 	print("\n+++++Show method 4++++")
 	train_method4(train_X, train_Y)		
 
 	print("\n+++++Show method 5++++")
 	train_method5(train_X, train_Y)
-	
+
 	print("\n+++++Show method 6++++")
 	#train_method6(train_X, train_Y)
-	
+
 	# uncomment this if you want to show contour of error graph
 	#plot_surface_error(train_X, train_Y)
 	print("\n+++++Show method 7++++")

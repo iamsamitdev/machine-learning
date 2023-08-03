@@ -37,11 +37,10 @@ def getDatasets():
 	return x_train, x_test, y_train, y_test
 	
 def restoreImg(X):
-	_, D = X.shape	
-	W = int(math.sqrt(D))	
-	assert D == W * W
-	imageData = X.reshape((-1, W, W))
-	return imageData
+	_, D = X.shape
+	W = int(math.sqrt(D))
+	assert D == W**2
+	return X.reshape((-1, W, W))
 
 
 def plotPCA2d(Xpca, Ydigits):

@@ -87,8 +87,7 @@ def deprocess_image(x):
 	x[:, :, 2] += 123.68
 	# 'BGR'->'RGB'
 	x = x[:, :, ::-1]
-	x = np.clip(x, 0, 255).astype('uint8')
-	return x
+	return np.clip(x, 0, 255).astype('uint8')
 
 # this will contain our generated image
 if K.image_dim_ordering() == 'th':
@@ -118,8 +117,7 @@ def gram_matrix(x):
 		features = K.batch_flatten(x)
 	else:
 		features = K.batch_flatten(K.permute_dimensions(x, (2, 0, 1)))
-	gram = K.dot(features, K.transpose(features))
-	return gram
+	return K.dot(features, K.transpose(features))
 
 # the "style loss" is designed to maintain
 # the style of the reference image in the generated image.

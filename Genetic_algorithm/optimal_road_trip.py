@@ -53,8 +53,8 @@ def mutate_agent(agent_genome, max_mutations=3):
 	
 	agent_genome = list(agent_genome)
 	num_mutations = random.randint(1, max_mutations)
-	
-	for mutation in range(num_mutations):
+
+	for _ in range(num_mutations):
 		swap_index1 = random.randint(0, len(agent_genome) - 1)
 		swap_index2 = swap_index1
 
@@ -62,7 +62,7 @@ def mutate_agent(agent_genome, max_mutations=3):
 			swap_index2 = random.randint(0, len(agent_genome) - 1)
 
 		agent_genome[swap_index1], agent_genome[swap_index2] = agent_genome[swap_index2], agent_genome[swap_index1]
-			
+
 	return tuple(agent_genome)
 
 def shuffle_mutation(agent_genome):
@@ -91,10 +91,7 @@ def generate_random_population(pop_size):
 		Generates a list with `pop_size` number of random road trips.
 	"""
 	
-	random_population = []
-	for agent in range(pop_size):
-		random_population.append(generate_random_agent())
-	return random_population
+	return [generate_random_agent() for _ in range(pop_size)]
 
 
 def run_genetic_algorithm(generations=5000, population_size=100):
@@ -106,7 +103,7 @@ def run_genetic_algorithm(generations=5000, population_size=100):
 	all_route = []
 	population_subset_size = int(population_size / 10.)
 	generations_10pct = int(generations / 10.)
-	
+
 	# Create a random population of `population_size` number of solutions.
 	population = generate_random_population(population_size)
 
@@ -134,18 +131,14 @@ def run_genetic_algorithm(generations=5000, population_size=100):
 				#print(agent_genome)
 				#print("")
 				all_route.append(agent_genome)
-				
+
 			# Create 1 exact copy of each of the top road trips
 			new_population.append(agent_genome)
 
 			# Create 2 offspring with 1-3 point mutations
-			for offspring in range(2):
-				new_population.append(mutate_agent(agent_genome, 3))
-				
+			new_population.extend(mutate_agent(agent_genome, 3) for _ in range(2))
 			# Create 7 offspring with a single shuffle mutation
-			for offspring in range(7):
-				new_population.append(shuffle_mutation(agent_genome))
-
+			new_population.extend(shuffle_mutation(agent_genome) for _ in range(7))
 		# Replace the old population with the new population of offspring 
 		for i in range(len(population))[::-1]:
 			del population[i]

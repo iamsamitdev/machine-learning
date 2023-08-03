@@ -33,7 +33,7 @@ def build_SPC(inputs, config, is_training, backbone='resnet50'):
 		input_gt_masks = inputs['input_gt_masks']
 		# SPCNET gloabel text segmentation
 		input_gt_global_masks = inputs['input_gt_global_masks']
-	
+
    	# pyramid_feature Dict{P2, P3, P4, P5} of feature maps from different level of the
 	# feature pyramid. Each is [batch, height, width, channels]
 	pyramid_feature = build_FPN(input_image, config, is_training, backbone)
@@ -59,7 +59,7 @@ def build_SPC(inputs, config, is_training, backbone='resnet50'):
 					 else config.POST_NMS_ROIS_INFERENCE
 	rpn_rois = generate_proposal(rpn_prob, rpn_bbox, anchors, proposal_count, config)
 	assert config.USE_RPN_ROIS == True, "Don't use rpn rois not implement"
-	
+
 	if is_training:
 		# Generate detection targets
 		# Subsamples proposals and generates target outputs for training
@@ -81,15 +81,24 @@ def build_SPC(inputs, config, is_training, backbone='resnet50'):
 		mrcnn_mask_loss = build_mrcnn_mask_loss(target_mask, target_class_ids, mrcnn_mask_logits, config)
 		global_mask_loss = build_global_mask_loss(input_gt_global_masks, gts, config)
 
-		losses = {}
-		losses['rpn_class_loss'] = rpn_class_loss * config.LOSS_WEIGHTS['rpn_class_loss']
-		losses['rpn_bbox_loss'] = rpn_bbox_loss * config.LOSS_WEIGHTS['rpn_bbox_loss']
-		losses['mrcnn_class_loss'] = mrcnn_class_loss * config.LOSS_WEIGHTS['mrcnn_class_loss']
-		losses['mrcnn_bbox_loss'] = mrcnn_bbox_loss * config.LOSS_WEIGHTS['mrcnn_bbox_loss']
-		losses['mrcnn_mask_loss'] = mrcnn_mask_loss * config.LOSS_WEIGHTS['mrcnn_mask_loss']
-		losses['global_mask_loss'] = global_mask_loss * config.LOSS_WEIGHTS['global_mask_loss']
-		losses['total_loss'] = tf.add_n([losses[k] for k in losses.keys()] +
-								tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES))
+		losses = {
+			'rpn_class_loss': rpn_class_loss * config.LOSS_WEIGHTS['rpn_class_loss'],
+			'rpn_bbox_loss': rpn_bbox_loss * config.LOSS_WEIGHTS['rpn_bbox_loss'],
+			'mrcnn_class_loss': mrcnn_class_loss
+			* config.LOSS_WEIGHTS['mrcnn_class_loss'],
+			'mrcnn_bbox_loss': mrcnn_bbox_loss
+			* config.LOSS_WEIGHTS['mrcnn_bbox_loss'],
+			'mrcnn_mask_loss': mrcnn_mask_loss
+			* config.LOSS_WEIGHTS['mrcnn_mask_loss'],
+			'global_mask_loss': global_mask_loss
+			* config.LOSS_WEIGHTS['global_mask_loss'],
+		}
+		losses['total_loss'] = tf.add_n(
+			(
+				[losses[k] for k in losses]
+				+ tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+			)
+		)
 		return losses
 	else:
 		# Network Heads
@@ -99,13 +108,10 @@ def build_SPC(inputs, config, is_training, backbone='resnet50'):
 		# Create masks for detections
 		mrcnn_mask_logits, mrcnn_mask = build_mrcnn_mask(rpn_rois, tcm_outputs,\
 								image_shape, is_training, config)
-		# Reshape global text segmentation map
-		# Original: Dict{P2, P3, P4, P5} each is [batch, H, W, NUM_CLASSES]
-		# Reshape:  [Batch, 4, H, W, NUM_CLASSES]
-		stack_gts = []
-		for i in range(config.BATCH_SIZE):
-			stack_gts.append(tf.stack([gts[P][i,...] for P in ['P2', 'P3', 'P4', 'P5']],\
-							axis=0))
+		stack_gts = [
+			tf.stack([gts[P][i, ...] for P in ['P2', 'P3', 'P4', 'P5']], axis=0)
+			for i in range(config.BATCH_SIZE)
+		]
 		gts = tf.stack(stack_gts, axis=0)
 		# Detections
 		# output is 
@@ -121,7 +127,6 @@ def build_input_graph(is_training, config):
 	"""
 	build input tensors
 	"""
-	inputs = {}
 	# Image size must be dividable by 2 multiple times
 	h, w = config.IMAGE_SHAPE[:2]
 	if h / 2**6 != int(h / 2**6) or w / 2**6 != int(w / 2**6):
@@ -129,10 +134,13 @@ def build_input_graph(is_training, config):
 						"to avoid fractions when downscaling and upscaling."\
 						"For example, use 256, 320, 384, 448, 512, ... etc. ")
 
-	inputs['input_image'] = tf.placeholder(tf.float32,\
-							shape=[None, config.IMAGE_SHAPE[0],\
-							config.IMAGE_SHAPE[1], 3],\
-							name='input_image')
+	inputs = {
+		'input_image': tf.placeholder(
+			tf.float32,
+			shape=[None, config.IMAGE_SHAPE[0], config.IMAGE_SHAPE[1], 3],
+			name='input_image',
+		)
+	}
 	if is_training:
 		#RPN GT
 		inputs['input_rpn_match'] = tf.placeholder(tf.int32,\
@@ -240,10 +248,10 @@ def TCM_module(input_feature, image_shape, scop, config):
 	'''
 	arg_scope = [slim.conv2d]
 	with slim.arg_scope(arg_scope, 
-					activation_fn=None,
-					normalizer_fn=None,
-					weights_initializer=tf.truncated_normal_initializer(stddev=0.001)):
-		with tf.variable_scope(scop + "/TCM_Module"):
+						activation_fn=None,
+						normalizer_fn=None,
+						weights_initializer=tf.truncated_normal_initializer(stddev=0.001)):
+		with tf.variable_scope(f"{scop}/TCM_Module"):
 			conv1 = slim.conv2d(input_feature, config.TOP_DOWN_PYRAMID_SIZE, [3,3])
 			conv2 = slim.conv2d(conv1, config.TOP_DOWN_PYRAMID_SIZE, [3,3])
 			# global text semantic sementation map [N, h, w, 2]
@@ -322,10 +330,14 @@ def generate_all_anchors(fpn_shapes, image_shape, config):
 	# numpy array [N, 4] 
 	norm_anchors = utils.norm_boxes(anchors, image_shape)
 	anchors_tensor = tf.convert_to_tensor(norm_anchors)
-	# Duplicate across the batch dimension
-	batch_anchors = tf.broadcast_to(anchors_tensor,\
-					[config.IMAGES_PER_GPU, tf.shape(anchors_tensor)[0],tf.shape(anchors_tensor)[1]])
-	return batch_anchors
+	return tf.broadcast_to(
+		anchors_tensor,
+		[
+			config.IMAGES_PER_GPU,
+			tf.shape(anchors_tensor)[0],
+			tf.shape(anchors_tensor)[1],
+		],
+	)
 
 def generate_proposal(rpn_prob, rpn_bbox, anchors, proposal_count, config):
 	nms_thresh = config.RPN_NMS_THRESHOLD
@@ -524,11 +536,13 @@ def generate_detect_target(proposals, gt_class_ids, gt_boxes, gt_masks, config):
 	"""
 	# Slice the batch and run a graph for each slice
 	names = ['rois', 'target_class_ids', 'target_deltas', 'target_mask']
-	outputs = utils.batch_slice(\
-				[proposals, gt_class_ids, gt_boxes, gt_masks],\
-				lambda w,x,y,z,config : detect_target(w, x, y, z,config),\
-				config.IMAGES_PER_GPU, names=names,config=config)
-	return outputs
+	return utils.batch_slice(
+		[proposals, gt_class_ids, gt_boxes, gt_masks],
+		lambda w, x, y, z, config: detect_target(w, x, y, z, config),
+		config.IMAGES_PER_GPU,
+		names=names,
+		config=config,
+	)
 
 # ******************************************************************
 # 
@@ -610,8 +624,7 @@ def PyramidROIAlign(boxes, image_shape, pyramid_feature, pool_shape, config):
 	# croped regions in the shape: [batch * num_boxes, pool_height, pool_width, channels].
 	# The width and height are those specific in the pool_shape in the layer constructor.
 	shape = tf.concat([[tf.shape(boxes)[0] * tf.shape(boxes)[1]], tf.shape(croped)[1:]], axis=0)
-	pooled = tf.reshape(croped, shape)
-	return pooled
+	return tf.reshape(croped, shape)
 
 def build_mrcnn_head(rois, pyramid_feature, image_shape, is_training, config):
 	# ROI Pooling
@@ -645,11 +658,13 @@ def build_mrcnn_head(rois, pyramid_feature, image_shape, is_training, config):
 								 activation_fn=None,\
 								 weights_initializer=tf.truncated_normal_initializer(stddev=0.05))
 			# Reshape [Batch, num_rois, num_classes]
-			cls_shape = tf.concat([tf.shape(rois)[0:2], tf.shape(mrcnn_class_logits)[1:]], axis=0)
+			cls_shape = tf.concat(
+				[tf.shape(rois)[:2], tf.shape(mrcnn_class_logits)[1:]], axis=0
+			)
 			mrcnn_class_logits = tf.reshape(mrcnn_class_logits, cls_shape)
 			mrcnn_prob = tf.reshape(mrcnn_prob, cls_shape)
 			# Reshape [Batch, num_rois, num_classes * 4]
-			box_shape = tf.concat([tf.shape(rois)[0:2], tf.shape(mrcnn_bbox)[1:]], axis=0)
+			box_shape = tf.concat([tf.shape(rois)[:2], tf.shape(mrcnn_bbox)[1:]], axis=0)
 			mrcnn_bbox = tf.reshape(mrcnn_bbox, box_shape)
 
 			return mrcnn_class_logits, mrcnn_prob, mrcnn_bbox
@@ -675,7 +690,7 @@ def build_mrcnn_mask(rois, feature_maps, image_shape, is_training, config):
 			pooled_rois = PyramidROIAlign(rois, image_shape, feature_maps,\
 										  [config.MASK_POOL_SIZE, config.MASK_POOL_SIZE],\
 										  config)
-			for i in range(4):
+			for _ in range(4):
 				pooled_rois = slim.conv2d(pooled_rois, 256, [3,3],\
 										stride=1, padding='SAME')
 			# 28 x 28
@@ -683,7 +698,7 @@ def build_mrcnn_mask(rois, feature_maps, image_shape, is_training, config):
 										stride=2, padding='VALID', activation_fn=tf.nn.relu)
 			mask_logits = slim.conv2d(conv, config.NUM_CLASSES, [1,1],\
 										stride=1, padding='VALID', activation_fn=None)
-			mask_shape = tf.concat([tf.shape(rois)[0:2], tf.shape(mask_logits)[1:]], axis=0)
+			mask_shape = tf.concat([tf.shape(rois)[:2], tf.shape(mask_logits)[1:]], axis=0)
 			mrcnn_mask_logits = tf.reshape(mask_logits, mask_shape)
 			mrcnn_mask_pred = tf.sigmoid(mrcnn_mask_logits)
 
@@ -847,8 +862,7 @@ def build_rescore_graph(refined_rois, class_scores, mrcnn_mask, gts, config):
 	# calculate fused score
 	fused_score = tf.exp(instance_score_1 + classify_score_1)
 	factor = tf.exp(instance_score_0 + classify_score_0) + fused_score
-	box_rescore = fused_score / factor
-	return box_rescore
+	return fused_score / factor
 
 
 
@@ -865,8 +879,7 @@ def smooth_l1_loss(y_true, y_pred):
 	"""
 	diff = tf.abs(y_true - y_pred)
 	less_than_one = tf.cast(tf.less(diff, 1.0), tf.float32)
-	loss = (less_than_one * 0.5 * diff**2) + (1 - less_than_one) * (diff - 0.5)
-	return loss
+	return (less_than_one * 0.5 * diff**2) + (1 - less_than_one) * (diff - 0.5)
 
 def build_rpn_class_loss(rpn_match, rpn_class_logits, config):
 	'''

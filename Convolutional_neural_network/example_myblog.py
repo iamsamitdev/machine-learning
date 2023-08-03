@@ -91,15 +91,15 @@ def scan(image, filter, pad, to_do):
 	image = np.array(image)
 	filter = np.array(filter)
 
-	limit_row, limit_col = filter.shape	
-	length_row, length_col = 0, 0	
+	limit_row, limit_col = filter.shape
+	length_row, length_col = 0, 0
 	if pad == "same":
 		image = pad_zeros(image, filter)
 	elif pad != "valid":
 		raise Exception("Invalid pad parameter")
-	
+
 	length_row = image.shape[0]-limit_row+1
-	length_col = image.shape[1]-limit_col+1		
+	length_col = image.shape[1]-limit_col+1
 	feature_map = []
 	for row in range(0, length_row):
 		for col in range(0, length_col):
@@ -108,10 +108,8 @@ def scan(image, filter, pad, to_do):
 			# convolution or polling(sub sample)
 			value = to_do(crop, filter)
 			feature_map.append(value)
-	
-	# reshape list to hight x width
-	feature_map = np.reshape(feature_map, (length_row, length_col))
-	return feature_map
+
+	return np.reshape(feature_map, (length_row, length_col))
 	
 	
 def convolve(image, filter, pad):	

@@ -120,20 +120,20 @@ def train(model, X_train, X_test, Y_train, Y_test ):
 	global_start_time = time.time()
 	#automatic validation dataset 
 	#model.fit(X_train, Y_train, batch_size=32, epochs=5, verbose=0, validation_split=0.1)
-	model.fit(X_train, Y_train, batch_size=32, epochs=5, verbose=0,	validation_data=(X_test, Y_test))		
+	model.fit(X_train, Y_train, batch_size=32, epochs=5, verbose=0,	validation_data=(X_test, Y_test))
 	sec = datetime.timedelta(seconds=int(time.time() - global_start_time))
-	print ('Training duration : ', str(sec))
-		
+	print('Training duration : ', sec)
+
 	# evaluate all training set after trained
 	scores = model.evaluate(X_train, Y_train, verbose=0)
 	print("Evalute model: %s = %.4f" % (model.metrics_names[0] ,scores[0]))
 	print("Evalute model: %s = %.4f" % (model.metrics_names[1] ,scores[1]*100))	
-	
+
 	# for test only
 	score = model.evaluate(X_test, Y_test, verbose=0)
 	print('Test %s: %.4f' % (model.metrics_names[0], score[0]))
 	print('Test %s: %.4f %%' % (model.metrics_names[1], score[1]*100))
-	
+
 	Ypredicted = model.predict(X_test, verbose=0)
 	Yexpected = decode(Y_test)
 	Ypredicted = decode(Ypredicted)
@@ -144,8 +144,7 @@ def train(model, X_train, X_test, Y_train, Y_test ):
 def test(model, X_input):	
 	predict = model.predict(X_input) 	# output shape is (1, number label)
 	print("Predict: ", predict)
-	index_label = np.argmax(predict[0])	
-	return index_label
+	return np.argmax(predict[0])
 	
 if __name__ == "__main__":	
 	print('Loading data...')
@@ -163,36 +162,36 @@ if __name__ == "__main__":
 	print(model_MPL.summary())
 	print('Training with MPL model...')
 	train(model_MPL, X_trainNew, X_testNew, Y_trainNew, Y_testNew)
-			
+
 	print('\n+++++ Example: Convolutional Neural Networks (CNN) with Convolution1D +++++')
 	model_CNN = build_CNN(num_classes)
 	print(model_CNN.summary())
-	print('Training with CNN model ...take a minute')	
+	print('Training with CNN model ...take a minute')
 	# For Convolutional 1D only, I reshaped input to (batch_size, steps, input_dim) 
 	XX_trainNew = np.reshape(X_trainNew, (-1, MAX_WORDS, 1))
-	XX_testNew = np.reshape(X_testNew, (-1, MAX_WORDS, 1))	
+	XX_testNew = np.reshape(X_testNew, (-1, MAX_WORDS, 1))
 	train(model_CNN, XX_trainNew, XX_testNew, Y_trainNew, Y_testNew)
-	
+
 	# +++++++++++++++++++ For test only +++++++++++++++++++++++++++++++
 	# label 0: 	"article", label 1: "encyclopedia", label 2: "news", label 4: "novel"
-	label = ["Article", "Encyclopedia", "News", "Novel"]	
+	label = ["Article", "Encyclopedia", "News", "Novel"]
 	# I used this text file for test from : https://www.nectec.or.th/corpus/index.php?league=pm		
 	file_name = "TEST_NOVEL.txt.p"
 	name = file_name.replace('.p', '')
 	content_index = load_dataset_unknown(file_name)
-	
+
 	# Convert sequences of words (index) to binary matrix
-	tokenizer = Tokenizer(num_words=MAX_WORDS)	
+	tokenizer = Tokenizer(num_words=MAX_WORDS)
 	content_binary = tokenizer.sequences_to_matrix([content_index], mode='binary')
-	
+
 	print("\n Test with data that never found: ", name)
-	print('\nTesting for MPL model')		
+	print('\nTesting for MPL model')
 	index_label = test(model_MPL ,content_binary)
-	print("Predict: '%s' is '%s'" % (name , label[index_label])) 
-	
-	print('\nTesting for CNN model')		
-	input = np.reshape(content_binary, (-1, MAX_WORDS, 1)) 	
+	print(f"Predict: '{name}' is '{label[index_label]}'") 
+
+	print('\nTesting for CNN model')
+	input = np.reshape(content_binary, (-1, MAX_WORDS, 1))
 	index_label = test(model_CNN, input)
-	print("Predict: '%s' is '%s'" % (name , label[index_label])) 
+	print(f"Predict: '{name}' is '{label[index_label]}'") 
 	
 	

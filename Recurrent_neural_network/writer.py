@@ -65,9 +65,9 @@ class Vocabulary():
 	def __init__(self, tokens):
 		# Vocabulary
 		# for converting all tokens to index
-		self.token2indices = dict((token, i) for i, token in enumerate(tokens))
+		self.token2indices = {token: i for i, token in enumerate(tokens)}
 		# for converting all index to a tokens
-		self.indices2token = dict((i, token) for i, token in enumerate(tokens))
+		self.indices2token = dict(enumerate(tokens))
 		self.encoding_len = len(tokens)	
 
 	def encode_target(self, next_tokens):
@@ -99,17 +99,17 @@ class Vocabulary():
 def model_generate_text(model, vocab, seq_tokens, content_length, diversity ):
 	generate_text = seq_tokens
 	max_seqlen = len(seq_tokens)	
-		
-	for i in range(0, content_length - max_seqlen):	
+
+	for _ in range(0, content_length - max_seqlen):
 		# One-hot encoding
 		seq_encoded = vocab.encode_input([seq_tokens]) # input shape is [1, number of tokens, encoding_len ]				
 		preds = model.predict(seq_encoded, verbose=0)[0] # Output shape is [1, encoding_len]
-				
+
 		next_index = vocab.decode_predict(preds, diversity)
-		next_char = vocab.indices2token[next_index]			
+		next_char = vocab.indices2token[next_index]
 		generate_text = np.append(generate_text, next_char)
 		seq_tokens = np.append(seq_tokens[1:], next_char)		
-		
+
 	return generate_text
 
 def get_vocabulary(content):
@@ -125,7 +125,7 @@ def train_model(content, max_seqlen, build_model, step=1,
 	vocab = get_vocabulary(content)
 	print("\ntotal tokens: ", vocab.encoding_len)
 	print("sequences length: ", max_seqlen)	
-	
+
 	print('Preparing the input and target...')
 	# Preparing the input and target
 	# cut the content in semi-redundant sequences of max_seqlen characters
@@ -133,29 +133,27 @@ def train_model(content, max_seqlen, build_model, step=1,
 	next_tokens = []
 	for i in range(0, len(content) - max_seqlen, step):
 		batch_seqtokens.append(content[i: i + max_seqlen])
-		next_tokens.append(content[i + max_seqlen])	
+		next_tokens.append(content[i + max_seqlen])
 	print('len batch_seqtokens:', len(batch_seqtokens))
 	print('len next_tokens:', len(next_tokens))
 
 	print('Vectorization...')
 	# One-hot encoding 
 	X = vocab.encode_input(batch_seqtokens)
-	y = vocab.encode_target(next_tokens)	
+	y = vocab.encode_target(next_tokens)
 	print("X shape:", X.shape)
 	print("Y shape:", y.shape)
 
 	print('Build model...')
 	model = build_model(max_seqlen, vocab.encoding_len)	
-	
+
 	# write text to files
-	def __write_text__(file_name, generate_text):		
-		file = open(os.path.join(TEMP_PATH, file_name) ,"w") 			
-		text = ''.join(generate_text)
-		print('\n**** Generate text *****\n', text)
-		file.write(text)	
-		file.close()	
-				
-	
+	def __write_text__(file_name, generate_text):	
+		with open(os.path.join(TEMP_PATH, file_name) ,"w") as file:
+			text = ''.join(generate_text)
+			print('\n**** Generate text *****\n', text)
+			file.write(text)				
+
 	all_log = {}
 	all_log['max_seqlen'] = max_seqlen
 	def on_epoch_end(epoch, _):
@@ -163,15 +161,15 @@ def train_model(content, max_seqlen, build_model, step=1,
 		#	  batch_size=25,
 		#	  epochs=num_epochs, verbose=0) # verbose = 1, 2 print a progress status 
 		generate_list =[[]] * len(diversity_list)
-		# start_index = random.randint(0, len(content) - max_seqlen - 1)		
+		# start_index = random.randint(0, len(content) - max_seqlen - 1)
 		for index, diversity in enumerate(diversity_list):	# many diversity
-			print('Tesing with diversity:', diversity)		
-			# for begining input			  
-			seq_tokens =content[0:max_seqlen]		
+			print('Tesing with diversity:', diversity)
+			# for begining input
+			seq_tokens = content[:max_seqlen]
 			#seq_tokens =content[start_index: start_index + max_seqlen]		
-			
+
 			print("Generate with begining tokens: ", seq_tokens)
-			
+
 			"""
 			generate_text = seq_tokens
 			for i in range(0, len(content) - max_seqlen):	
@@ -184,23 +182,23 @@ def train_model(content, max_seqlen, build_model, step=1,
 				generate_text = np.append(generate_text, next_char)
 				seq_tokens = np.append(seq_tokens[1:], next_char)				
 			"""
-			
+
 			#visualiz training
 			generate_text = model_generate_text(model, vocab, seq_tokens, len(content), diversity)
-			
-			file_name =  "diversity_"+ str(diversity) + "_"  + write_tofilename
+
+			file_name = f"diversity_{str(diversity)}_{write_tofilename}"
 			# override old file
 			__write_text__(file_name, generate_text) 	# write a file for each diversity			
 			generate_list[index].append(generate_text) 	# for visual only	
-	
-			#################### ending trainer function #################
+			
+					#################### ending trainer function #################
 		all_log[epoch] = generate_list		
-		
+
 	print_callback = LambdaCallback(on_epoch_end=on_epoch_end)
-	
+
 	model.fit(X, y,
 		  batch_size=128,
 		  epochs = num_epochs,
 		  callbacks=[print_callback])
-		
+
 	return	all_log, model

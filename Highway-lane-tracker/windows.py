@@ -156,8 +156,10 @@ class Window:
         return getattr(self, param), self.y
 
     def check_x_param(self, param):
-        assert param == 'x_filtered' or param == 'x_measured', "Invalid position parameter. `param` must be " \
-                                                               "'x_filtered' or 'x_measured' "
+        assert param in ['x_filtered', 'x_measured'], (
+            "Invalid position parameter. `param` must be "
+            "'x_filtered' or 'x_measured' "
+        )
 
 
 def sliding_window_update(windows: List[Window], score_img, margin, mode):
@@ -226,9 +228,9 @@ def joint_sliding_window_update(windows_left: List[Window], windows_right: List[
 
 
 def start_sliding_search(windows, score_img, mode):
-    assert mode == 'left' or mode == 'right', "Mode not valid."
+    assert mode in ['left', 'right'], "Mode not valid."
     assert strictly_decreasing([w.y for w in windows]), "Windows not ordered properly. Should start at image bottom"
-    img_h, img_w = score_img.shape[0:2]
+    img_h, img_w = score_img.shape[:2]
     # Update the bottom window
     if mode == 'left':
         windows[0].update(score_img, (0, img_w // 2))
@@ -264,8 +266,7 @@ def argmax_between(arr: np.ndarray, begin: int, end: int) -> int:
 
     In case of multiple occurrences of the maximum value, the index of the first occurrence is returned.
     """
-    max_ndx = np.argmax(arr[begin:end]) + begin
-    return max_ndx
+    return np.argmax(arr[begin:end]) + begin
 
 
 def filter_window_list(windows: List[Window], remove_frozen=False, remove_dropped=True, remove_undetected=False):
@@ -369,7 +370,7 @@ class WindowFilter:
 
     def grow_uncertainty(self, mag):
         """Grows state uncertainty."""
-        for i in range(mag):
+        for _ in range(mag):
             # P = FPF' + Q
             self.kf.P = self.kf._alpha_sq * dot3(self.kf.F, self.kf.P, self.kf.F.T) + self.kf.Q
 

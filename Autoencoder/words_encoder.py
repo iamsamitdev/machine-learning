@@ -21,37 +21,37 @@ from keras.models import Model
 def prepare_dataset(file_name):
 	dictionary = open(file_name, encoding="utf8").read().lower()
 	dictionary = dictionary.split()
-	
+
 	# to reduce duplicate words
 	words = sorted(list(set(dictionary)))
-	len_words = len(words)	
+	len_words = len(words)
 	print('total words:', len_words)
-	
+
 	# for converting a token to index
-	char_indices = dict((c, i) for i, c in enumerate(words))
+	char_indices = {c: i for i, c in enumerate(words)}
 	# for converting index to a token
-	indices_char = dict((i, c) for i, c in enumerate(words))
-		
+	indices_char = dict(enumerate(words))
+
 	print('Vectorization...')
 	# One-hot encoding 
 	# the length of a encoded token vector == number of vocabulary
 	Xtrain = np.zeros((len_words, len_words), dtype=np.bool)
 	for t, w in enumerate(words):
 		Xtrain[t, char_indices[w]] = 1
-	
+
 	return words, Xtrain, char_indices, indices_char
  
 def trainModel(model, Xtrain, epochs):
-	global_start_time = time.time()			
-	model.fit(Xtrain, Xtrain, batch_size=500, nb_epoch=epochs, verbose=0)			
+	global_start_time = time.time()
+	model.fit(Xtrain, Xtrain, batch_size=500, nb_epoch=epochs, verbose=0)
 	sec = datetime.timedelta(seconds=int(time.time() - global_start_time))
-	print ('Training duration : ', str(sec))
-	
+	print('Training duration : ', sec)
+
 	# evaluate all training set after trained
 	scores = model.evaluate(Xtrain, Xtrain, verbose=0)
 	print("Evalute model: %s = %.4f" % (model.metrics_names[0] ,scores[0]))
 	print("Evalute model: %s = %.4f" % (model.metrics_names[1] ,scores[1]*100))
-		
+
 	return model
 		
 def build_neural_network(input_len):		

@@ -150,11 +150,11 @@ def train_GAN(X_train, discriminator, generator, nb_epoch=5000, num_sampling=32)
 		X_real = X_train[np.random.randint(0, X_train.shape[0], size=num_sampling),:,:,:]
 		assert X_real.shape[0] == num_sampling
 		assert X_real.shape[1:] == X_train.shape[1:]
-	
+
 		# Make generated images (fake images) from input noise	
 		X_fake = generator.predict(Z_noise)
 		# concatenate fake and real images
-		X_concat = np.concatenate((X_real, X_fake))		
+		X_concat = np.concatenate((X_real, X_fake))
 		assert X_concat.shape[0] == X_real.shape[0] + X_fake.shape[0]
 
 		# Create target datasets (label 0 or 1)
@@ -163,35 +163,35 @@ def train_GAN(X_train, discriminator, generator, nb_epoch=5000, num_sampling=32)
 		Y_label = np.append(Y_real, Y_fake) 	# combine all labels to a vector
 		assert Y_label.shape[0] == X_concat.shape[0]
 		assert Y_label.shape[0] == Y_real.shape[0] + Y_fake.shape[0]
-		
+
 		# Unfreeze weights of discriminator model before training discriminator
-		enable_train(discriminator)	
+		enable_train(discriminator)
 		# Train discriminator on generated images (fake image) and real images		
 		if e == 0:
 			# frist training
 			discriminator.fit(X_concat, Y_label, verbose =0, epochs=1, batch_size=128)			
-				
+
 		scores = discriminator.train_on_batch(X_concat, Y_label )
-		acc_dis.append(scores[1])			
-		print("Discriminator: loss = %f and accuracy = %f" % ( scores[0], scores[1]))		
+		acc_dis.append(scores[1])
+		print("Discriminator: loss = %f and accuracy = %f" % ( scores[0], scores[1]))
 		#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-		
+
 		#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		#+++++++++++++++++++++ Training Generative Model +++++++++++++++++++++++++
 		# don't train discriminator (freeze weights of discriminative model)
 		enable_train(discriminator,False)
 		# make all fake image to label 1 (fake label)
 		Y_fake = np.ones(num_sampling)
-		scores = None		
-		for i in range(0,1):
+		scores = None
+		for _ in range(0,1):
 			# train Generator-Discriminator stack on input noise		
 			scores = train_generator.train_on_batch(Z_noise, Y_fake)
 		acc_gen.append(scores[1])
-		print("Generator: loss = %f and accuracy = %f" % ( scores[0], scores[1]))		
+		print("Generator: loss = %f and accuracy = %f" % ( scores[0], scores[1]))
 		#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		#+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-				
+
 		if e%2 == 0:
 			# save all data to graphs
 			save_accuracy(acc_dis, acc_gen)
@@ -202,30 +202,25 @@ def train_GAN(X_train, discriminator, generator, nb_epoch=5000, num_sampling=32)
 
 def reshapeCNNInput(X): 
 	exampleNum, W, W = X.shape
-	# change shape of image data
-	if K.image_dim_ordering() == 'th': 
-		# backend is Theano
-		# Image dimension = chanel x row x column (chanel = 1, if it is RGB: chanel = 3)
-		XImg = X.reshape(exampleNum, 1, W, W)
-	else: 
-		# 'tf' backend is Tensorflow
-		# Image dimension = row x column x chanel (chanel = 1, if it is RGB: chanel = 3)
-		XImg = X.reshape(exampleNum, W, W, 1)		
-	return XImg
+	return (
+		X.reshape(exampleNum, 1, W, W)
+		if K.image_dim_ordering() == 'th'
+		else X.reshape(exampleNum, W, W, 1)
+	)
 	
 def prepare_Dataset():
 	#X_test, Y_train, Y_test => unused
-	(X_train, Y_train), (X_test, Y_test) = mnist.load_data() 
+	(X_train, Y_train), (X_test, Y_test) = mnist.load_data()
 	# use mini examples for training and testing
-	X_train = X_train[0:500]	
+	X_train = X_train[:500]
 	X_train = reshapeCNNInput(X_train)
 	print('X_train shape:', X_train.shape)
 	print('X_test shape:', X_test.shape)
-		
+
 	# Normalized
 	X_train = X_train.astype('float32')
-	X_train /= 255	
-	print ('Min and max train dataset: %s , %s' % (np.min(X_train), np.max(X_train) ) )
+	X_train /= 255
+	print(f'Min and max train dataset: {np.min(X_train)} , {np.max(X_train)}')
 	return X_train
 
 if __name__ == "__main__":

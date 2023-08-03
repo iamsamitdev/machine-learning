@@ -81,22 +81,22 @@ def _deprocessImg(imgData):
 def showPredict(orgImg, predicted):
 	className = [val[1] for val in predicted[0]]
 	prop = [val[2] for val in predicted[0]]
-	
+
 	f, (ax1, ax2) = plt.subplots(2)
-	ax1.set_title('Resize the image: %s' % str(np.shape(orgImg)) )	
+	ax1.set_title(f'Resize the image: {str(np.shape(orgImg))}')
 	ax1.imshow(orgImg)
 	ax1.set_axis_off()
-	
+
 	N = 5
 	ind = np.arange(N)  # the x locations for the groups
 	width = 0.35       # the width of the bars
-	
+
 	ax2.set_ylabel('Probability')
-	ax2.set_title('This is a -> %s' % className[0], color='red')
+	ax2.set_title(f'This is a -> {className[0]}', color='red')
 	ax2.set_ylim([0, 1.3])
 	ax2.get_xaxis().set_visible(False)
 	rects1 = ax2.bar(ind, prop, width, color='blue')	
-	
+
 	# add some text for labels and title 
 	for index, rect in enumerate(rects1):
 		height = rect.get_height()
@@ -106,7 +106,7 @@ def showPredict(orgImg, predicted):
 		ax2.text(rect.get_x() + rect.get_width()/2., 1.05*height,
 				'%s\n(%.2f)' % (className[index], prop[index]),
 				ha='center', va='bottom', color=col)
-		
+
 	plt.gcf().canvas.set_window_title('Image classification')
 	plt.show()
 
@@ -140,23 +140,23 @@ def visualizeModel(base_model, imgData, block_name):
 	features = feature_model.predict(imgData)
 	# [1, heigh, width, filter]	
 	features = features[0] 
-	
+
 	_, _, totalFilter = features.shape
 	features = features.transpose(2,0,1)
-		
+
 	f, (axList) = plt.subplots(2,4)
 	axList = np.reshape(axList, (-1,))
 	randIndex = np.random.randint(0, totalFilter, size=8)
-	
+
 	for index, numFilter in enumerate(randIndex):
 		ax = axList[index]
 		ax.set_axis_off()
-		ax.set_title('Filter : %s' % numFilter)
+		ax.set_title(f'Filter : {numFilter}')
 		plt.gray()
 		ax.imshow(_deprocessImg(features[numFilter]))
 		ax.set_axis_off()
-	
-	plt.gcf().canvas.set_window_title('Visualize VGG model')	
+
+	plt.gcf().canvas.set_window_title('Visualize VGG model')
 	plt.show()
 
 # test here

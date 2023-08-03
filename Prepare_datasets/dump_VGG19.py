@@ -5,20 +5,21 @@ import pickle
 VGG_PATH = "D:\MyProject\machine-learning\Convolutional_neural_network\imagenet-vgg-verydeep-19"
 # Use VGG-Network: https://arxiv.org/abs/1409.1556 (paper)
 # http://www.vlfeat.org/matconvnet/pretrained/ (.mat)
-dataVGG = scipy.io.loadmat(VGG_PATH)	
+dataVGG = scipy.io.loadmat(VGG_PATH)
 dataLayer = dataVGG['layers'][0]
 assert dataLayer.shape == (43,) # all layer
 
 # get color mean
 mean = dataVGG['normalization'][0][0][0]
 assert mean.shape == (224, 224, 3)
-	
+
 # the average color: Red, Green, Blue should be [123.68, 116.779, 103.939])
 meanColor = np.mean(mean, axis=(0, 1))
 
-W={}; B={}
-for index, layer in enumerate(dataLayer):
-	dd = layer[0][0]	
+W={}
+B={}
+for layer in dataLayer:
+	dd = layer[0][0]
 	if len(dd) <= 2: 
 		# show 'relu layer' names
 		print(dd[1]) 
@@ -101,6 +102,4 @@ def dumpData():
 	for key, value in sorted(BB.items()):
 		print(key, value.shape)
 
-if __name__ == '__main__':	
-	pass
 	#dumpData()
